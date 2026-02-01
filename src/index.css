@@ -1,0 +1,168 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* EcoVerify Design System - Sustainable Water Verification
+   Inspired by nature, designed for trust
+*/
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+@layer base {
+  :root {
+    /* Base colors - Light theme */
+    --background: 150 20% 98%;
+    --foreground: 160 30% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 160 30% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 160 30% 10%;
+
+    /* Primary - Forest Green */
+    --primary: 152 60% 32%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary - Earth Tones */
+    --secondary: 35 40% 92%;
+    --secondary-foreground: 35 50% 25%;
+
+    /* Muted - Soft sage */
+    --muted: 150 15% 92%;
+    --muted-foreground: 160 15% 45%;
+
+    /* Accent - Water Blue */
+    --accent: 200 70% 50%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Status Colors */
+    --success: 142 70% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 45 95% 55%;
+    --warning-foreground: 35 80% 20%;
+    --danger: 0 75% 55%;
+    --danger-foreground: 0 0% 100%;
+
+    /* Trust Traffic Light */
+    --trust-verified: 142 70% 45%;
+    --trust-unverified: 0 75% 55%;
+    --trust-pending: 45 95% 55%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 150 20% 88%;
+    --input: 150 20% 88%;
+    --ring: 152 60% 32%;
+
+    --radius: 1rem;
+
+    /* Gradients */
+    --gradient-eco: linear-gradient(135deg, hsl(152, 60%, 32%) 0%, hsl(170, 55%, 40%) 100%);
+    --gradient-water: linear-gradient(135deg, hsl(200, 70%, 50%) 0%, hsl(180, 60%, 45%) 100%);
+    --gradient-earth: linear-gradient(135deg, hsl(35, 40%, 92%) 0%, hsl(45, 35%, 88%) 100%);
+    --gradient-verified: linear-gradient(135deg, hsl(142, 70%, 45%) 0%, hsl(160, 65%, 40%) 100%);
+    --gradient-danger: linear-gradient(135deg, hsl(0, 75%, 55%) 0%, hsl(15, 70%, 50%) 100%);
+
+    /* Shadows */
+    --shadow-sm: 0 2px 8px -2px hsl(160 30% 10% / 0.08);
+    --shadow-md: 0 8px 24px -8px hsl(160 30% 10% / 0.12);
+    --shadow-lg: 0 16px 48px -12px hsl(160 30% 10% / 0.15);
+    --shadow-eco: 0 8px 32px -8px hsl(152 60% 32% / 0.25);
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 160 25% 8%;
+    --foreground: 150 20% 95%;
+
+    --card: 160 20% 12%;
+    --card-foreground: 150 20% 95%;
+
+    --popover: 160 20% 12%;
+    --popover-foreground: 150 20% 95%;
+
+    --primary: 152 55% 45%;
+    --primary-foreground: 160 25% 8%;
+
+    --secondary: 35 25% 18%;
+    --secondary-foreground: 35 30% 85%;
+
+    --muted: 160 15% 18%;
+    --muted-foreground: 160 10% 60%;
+
+    --accent: 200 60% 55%;
+    --accent-foreground: 160 25% 8%;
+
+    --success: 142 60% 50%;
+    --warning: 45 90% 60%;
+    --danger: 0 70% 60%;
+
+    --trust-verified: 142 60% 50%;
+    --trust-unverified: 0 70% 60%;
+    --trust-pending: 45 90% 60%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 160 15% 22%;
+    --input: 160 15% 22%;
+    --ring: 152 55% 45%;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .eco-gradient {
+    background: var(--gradient-eco);
+  }
+  
+  .water-gradient {
+    background: var(--gradient-water);
+  }
+  
+  .verified-gradient {
+    background: var(--gradient-verified);
+  }
+  
+  .danger-gradient {
+    background: var(--gradient-danger);
+  }
+  
+  .shadow-eco {
+    box-shadow: var(--shadow-eco);
+  }
+  
+  .glass-card {
+    background: hsl(var(--card) / 0.8);
+    backdrop-filter: blur(12px);
+  }
+}

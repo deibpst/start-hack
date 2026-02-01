@@ -1,0 +1,124 @@
+{
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2024-01-15",
+    "source": "Datos simulados basados en lineamientos del reto",
+    "description": "Mock de datos hídricos y de impacto para EcoVerify MVP"
+  },
+  "regiones": {
+    "norte_mx": {
+      "nombre": "Norte de México",
+      "spi": -1.8,
+      "estado_sequia": "severa",
+      "precipitacion_mm": 45,
+      "promedio_historico_mm": 180,
+      "deficit_porcentaje": 75
+    },
+    "centro_mx": {
+      "nombre": "Centro de México",
+      "spi": -0.8,
+      "estado_sequia": "moderada",
+      "precipitacion_mm": 120,
+      "promedio_historico_mm": 200,
+      "deficit_porcentaje": 40
+    },
+    "sur_mx": {
+      "nombre": "Sur de México",
+      "spi": 0.5,
+      "estado_sequia": "normal",
+      "precipitacion_mm": 350,
+      "promedio_historico_mm": 320,
+      "deficit_porcentaje": 0
+    }
+  },
+  "fabricas": {
+    "FAB001": {
+      "nombre": "Textiles del Norte S.A.",
+      "region": "norte_mx",
+      "sector": "textil",
+      "consumo_base_m3": 15000,
+      "consumo_actual_m3": 9500,
+      "ahorro_porcentaje": 36.7,
+      "tecnologias_implementadas": ["reciclaje_agua", "riego_eficiente", "sensores_iot"],
+      "certificado_emitido": true,
+      "fecha_verificacion": "2024-01-10"
+    },
+    "FAB002": {
+      "nombre": "Alimentos Procesados MX",
+      "region": "centro_mx",
+      "sector": "alimenticio",
+      "consumo_base_m3": 8000,
+      "consumo_actual_m3": 7200,
+      "ahorro_porcentaje": 10,
+      "tecnologias_implementadas": ["optimizacion_procesos"],
+      "certificado_emitido": false,
+      "fecha_verificacion": null
+    },
+    "FAB003": {
+      "nombre": "Bebidas Sustentables",
+      "region": "norte_mx",
+      "sector": "bebidas",
+      "consumo_base_m3": 25000,
+      "consumo_actual_m3": 14000,
+      "ahorro_porcentaje": 44,
+      "tecnologias_implementadas": ["tratamiento_aguas", "captacion_lluvia", "reciclaje_agua"],
+      "certificado_emitido": true,
+      "fecha_verificacion": "2024-01-12"
+    }
+  },
+  "productos": {
+    "7501234567890": {
+      "nombre": "Agua Mineral Eco",
+      "marca": "AquaVerde",
+      "fabrica_id": "FAB003",
+      "categoria": "bebidas",
+      "imagen_url": null,
+      "impacto": {
+        "agua_ahorrada_litros": 2.5,
+        "co2e_evitado_kg": 0.15,
+        "puntuacion_eco": 92
+      },
+      "verificado": true,
+      "descuento_disponible": 15
+    },
+    "7509876543210": {
+      "nombre": "Camiseta Orgánica",
+      "marca": "EcoTex",
+      "fabrica_id": "FAB001",
+      "categoria": "textil",
+      "imagen_url": null,
+      "impacto": {
+        "agua_ahorrada_litros": 850,
+        "co2e_evitado_kg": 2.3,
+        "puntuacion_eco": 88
+      },
+      "verificado": true,
+      "descuento_disponible": 20
+    },
+    "7505555555555": {
+      "nombre": "Galletas Tradicionales",
+      "marca": "Dulces MX",
+      "fabrica_id": "FAB002",
+      "categoria": "alimenticio",
+      "imagen_url": null,
+      "impacto": {
+        "agua_ahorrada_litros": 0,
+        "co2e_evitado_kg": 0,
+        "puntuacion_eco": 35
+      },
+      "verificado": false,
+      "descuento_disponible": 0
+    }
+  },
+  "umbrales": {
+    "ahorro_minimo_certificacion": 25,
+    "spi_sequia_moderada": -0.5,
+    "spi_sequia_severa": -1.5,
+    "puntuacion_eco_minima_verde": 70
+  },
+  "incentivos": {
+    "descuento_base_porcentaje": 10,
+    "bonus_sequia_severa": 5,
+    "bonus_ahorro_excepcional": 5
+  }
+}
