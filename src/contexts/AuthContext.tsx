@@ -9,7 +9,8 @@ interface AuthContextType {
     profile: Profile | null;
     loading: boolean;
     signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
-    signUp: (email: string, password: string, fullName: string, username: string) => Promise<{ error: Error | null }>;
+    signUp: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
+    updateProfile: (fullName: string, avatarUrl: string | null) => Promise<{ error: Error | null }>;
     signOut: () => Promise<void>;
 }
 
@@ -110,16 +111,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { error };
     };
 
-    const signUp = async (email: string, password: string, fullName: string, username: string) => {
+    const signUp = async (email: string, password: string, fullName: string) => {
         try {
-            // Create auth user with metadata - trigger will create profile automatically
+            console.log('Registrando usuario con:', { email, fullName });
+
+            // Create auth user with metadata
             const { data: authData, error: signUpError } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
                     data: {
                         full_name: fullName,
-                        username: username,
                     },
                     emailRedirectTo: `${window.location.origin}/`,
                 },
@@ -133,9 +135,66 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 return { error: new Error('No user returned from signup') };
             }
 
-            // Check if user needs email confirmation
-            console.log('User created:', authData.user);
-            console.log('Session:', authData.session);
+            console.log('Usuario creado en auth.users:', authData.user.id);
+            console.log('Metadata:', authData.user.user_metadata);
+
+            // Wait a bit for trigger to execute
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Check if profile exists
+            const { data: existingProfile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', authData.user.id)
+                .single();
+
+            if (existingProfile) {
+                console.log('Perfil creado por trigger:', existingProfile);
+            } else {
+                console.log('Trigger no creó perfil, creando manualmente...');
+                // Manually create profile
+                const { data: newProfile, error: profileError } = await supabase
+                    .from('profiles')
+                    .insert({
+                        id: authData.user.id,
+                        full_name: fullName,
+                        avatar_url: null,
+                    })
+                    .select()
+                    .single();
+
+                if (profileError) {
+                    console.error('Error creando perfil:', profileError);
+                    return { error: new Error(`Error al crear perfil: ${profileError.message}`) };
+                }
+
+                console.log('Perfil creado manualmente:', newProfile);
+            }
+
+            return { error: null };
+        } catch (err) {
+            console.error('Error en signUp:', err);
+            return { error: err as Error };
+        }
+    };
+
+    const updateProfile = async (fullName: string, avatarUrl: string | null) => {
+        if (!user?.id) {
+            return { error: new Error('No user logged in') };
+        }
+
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({
+                    full_name: fullName,
+                    avatar_url: avatarUrl,
+                })
+                .eq('id', user.id);
+
+            if (error) {
+                return { error };
+            }
 
             return { error: null };
         } catch (err) {
@@ -154,6 +213,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loading,
         signInWithEmail,
         signUp,
+        updateProfile,
         signOut,
     };
 

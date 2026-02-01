@@ -1,6 +1,6 @@
 import { useState, FormEvent } from 'react';
 import { motion } from 'framer-motion';
-import { LogIn, Loader2, Mail, Lock, User, AtSign } from 'lucide-react';
+import { LogIn, Loader2, Mail, Lock, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -17,7 +17,6 @@ export default function Login() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [fullName, setFullName] = useState('');
-    const [username, setUsername] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
     // Redirect if already authenticated
@@ -39,10 +38,10 @@ export default function Login() {
             return;
         }
 
-        if (mode === 'signup' && (!fullName || !username)) {
+        if (mode === 'signup' && !fullName) {
             toast({
                 title: 'Campos requeridos',
-                description: 'Por favor completa todos los campos',
+                description: 'Por favor ingresa tu nombre completo',
                 variant: 'destructive',
             });
             return;
@@ -52,7 +51,7 @@ export default function Login() {
             setIsLoading(true);
 
             if (mode === 'signup') {
-                const { error } = await signUp(email, password, fullName, username);
+                const { error } = await signUp(email, password, fullName);
 
                 if (error) {
                     toast({
@@ -153,36 +152,21 @@ export default function Login() {
 
                     {/* Form */}
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        {/* Signup Fields */}
+                        {/* Full Name */}
                         {mode === 'signup' && (
-                            <>
-                                <div>
-                                    <div className="relative">
-                                        <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                        <Input
-                                            type="text"
-                                            placeholder="Nombre completo"
-                                            value={fullName}
-                                            onChange={(e) => setFullName(e.target.value)}
-                                            disabled={isLoading}
-                                            className="pl-10 h-12"
-                                        />
-                                    </div>
+                            <div>
+                                <div className="relative">
+                                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                    <Input
+                                        type="text"
+                                        placeholder="Nombre completo"
+                                        value={fullName}
+                                        onChange={(e) => setFullName(e.target.value)}
+                                        disabled={isLoading}
+                                        className="pl-10 h-12"
+                                    />
                                 </div>
-                                <div>
-                                    <div className="relative">
-                                        <AtSign className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                        <Input
-                                            type="text"
-                                            placeholder="Nombre de usuario"
-                                            value={username}
-                                            onChange={(e) => setUsername(e.target.value)}
-                                            disabled={isLoading}
-                                            className="pl-10 h-12"
-                                        />
-                                    </div>
-                                </div>
-                            </>
+                            </div>
                         )}
 
                         {/* Email & Password */}
