@@ -20,6 +20,10 @@ import {
   buscarProductoOpenFoodFacts,
   type OpenFoodFactsProduct
 } from '@/services/openFoodFactsService';
+import {
+  buscarProductoEnSupabase,
+  type DatosCorporativos
+} from '@/services/supabaseProductService';
 import { useToast } from '@/hooks/use-toast';
 
 type Vista = 'scanner' | 'resultado';
@@ -29,6 +33,7 @@ const Index = () => {
   const [isScanning, setIsScanning] = useState(false);
   const [producto, setProducto] = useState<ProductoInfo | null>(null);
   const [openFoodFactsData, setOpenFoodFactsData] = useState<OpenFoodFactsProduct | null>(null);
+  const [datosCorporativos, setDatosCorporativos] = useState<DatosCorporativos | null>(null);
   const [estadoConfianza, setEstadoConfianza] = useState<EstadoConfianza>('pendiente');
   const [pruebaImpacto, setPruebaImpacto] = useState<PruebaDeImpacto | null>(null);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
@@ -36,8 +41,9 @@ const Index = () => {
 
   const handleScan = useCallback(async (barcode: string) => {
     setIsScanning(true);
+    setDatosCorporativos(null);
 
-    // Buscar en paralelo en ambas fuentes
+    // Buscar en paralelo en ambas fuentes locales
     const [productoLocal, openFoodFactsResult] = await Promise.all([
       Promise.resolve(buscarProducto(barcode)),
       buscarProductoOpenFoodFacts(barcode),
@@ -46,6 +52,13 @@ const Index = () => {
     // Guardar datos de Open Food Facts si existen
     if (openFoodFactsResult.found && openFoodFactsResult.product) {
       setOpenFoodFactsData(openFoodFactsResult.product);
+
+      // Buscar en Supabase usando el nombre del producto
+      const nombreProducto = openFoodFactsResult.product.product_name;
+      if (nombreProducto) {
+        const datosSupabase = await buscarProductoEnSupabase(nombreProducto);
+        setDatosCorporativos(datosSupabase);
+      }
     } else {
       setOpenFoodFactsData(null);
     }
@@ -57,11 +70,11 @@ const Index = () => {
       setVista('resultado');
 
       toast({
-        title: '¡Producto encontrado!',
+        title: '¡Producto verificado!',
         description: `${productoLocal.nombre} - ${productoLocal.marca}`,
       });
     } else if (openFoodFactsResult.found && openFoodFactsResult.product) {
-      // Si solo está en Open Food Facts, crear producto básico sin verificación
+      // Producto encontrado en Open Food Facts
       const productoBasico: ProductoInfo = {
         barcode,
         nombre: openFoodFactsResult.product.product_name || 'Producto sin nombre',
@@ -92,14 +105,14 @@ const Index = () => {
       setVista('resultado');
 
       toast({
-        title: 'Producto encontrado en Open Food Facts',
-        description: 'Sin datos de verificación hídrica disponibles.',
+        title: 'Producto encontrado',
+        description: 'Buscando datos en base de datos Cobalto...',
         variant: 'default',
       });
     } else {
       toast({
         title: 'Producto no encontrado',
-        description: 'El código de barras no está registrado en ninguna base de datos.',
+        description: 'El código de barras no está registrado.',
         variant: 'destructive',
       });
     }
@@ -111,6 +124,7 @@ const Index = () => {
     setVista('scanner');
     setProducto(null);
     setOpenFoodFactsData(null);
+    setDatosCorporativos(null);
     setEstadoConfianza('pendiente');
     setPruebaImpacto(null);
   }, []);
@@ -177,6 +191,7 @@ const Index = () => {
                   estadoConfianza={estadoConfianza}
                   onClaimDiscount={handleClaimDiscount}
                   openFoodFactsData={openFoodFactsData}
+                  datosCorporativos={datosCorporativos}
                 />
               )}
             </motion.div>

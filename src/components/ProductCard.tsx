@@ -1,20 +1,23 @@
 import { motion } from 'framer-motion';
-import { Droplets, Leaf, Factory, MapPin, Package } from 'lucide-react';
+import { Droplets, Leaf, Factory, MapPin, Package, AlertTriangle } from 'lucide-react';
 import { TrustTrafficLight } from './TrustTrafficLight';
 import { DiscountButton } from './DiscountButton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { ProductoInfo, EstadoConfianza } from '@/services/verificationService';
 import { traducirEstadoSequia, traducirTecnologia, calcularDescuento } from '@/services/verificationService';
 import type { OpenFoodFactsProduct } from '@/services/openFoodFactsService';
+import type { DatosCorporativos } from '@/services/supabaseProductService';
+import { formatearConsumoAgua } from '@/services/supabaseProductService';
 
 interface ProductCardProps {
   producto: ProductoInfo;
   estadoConfianza: EstadoConfianza;
   onClaimDiscount: () => void;
   openFoodFactsData?: OpenFoodFactsProduct | null;
+  datosCorporativos?: DatosCorporativos | null;
 }
 
-export function ProductCard({ producto, estadoConfianza, onClaimDiscount, openFoodFactsData }: ProductCardProps) {
+export function ProductCard({ producto, estadoConfianza, onClaimDiscount, openFoodFactsData, datosCorporativos }: ProductCardProps) {
   const descuento = calcularDescuento(producto);
 
   return (
@@ -107,15 +110,15 @@ export function ProductCard({ producto, estadoConfianza, onClaimDiscount, openFo
               <Factory className="h-5 w-5 text-primary" />
               <h4 className="font-semibold text-foreground">Información del Productor</h4>
             </div>
-            
+
             <div className="space-y-3">
               <InfoRow label="Fábrica" value={producto.fabrica.nombre} />
-              <InfoRow 
-                label="Ahorro de agua" 
+              <InfoRow
+                label="Ahorro de agua"
                 value={`${producto.fabrica.ahorro_porcentaje}%`}
                 highlight={producto.fabrica.ahorro_porcentaje >= 25}
               />
-              
+
               {producto.fabrica.tecnologias.length > 0 && (
                 <div>
                   <p className="mb-2 text-xs text-muted-foreground">Tecnologías implementadas:</p>
@@ -134,6 +137,65 @@ export function ProductCard({ producto, estadoConfianza, onClaimDiscount, openFo
             </div>
           </motion.div>
 
+          {/* Datos Corporativos Hídricos - Supabase */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.35 }}
+            className="rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/5 to-primary/10 p-5 shadow-sm"
+          >
+            <div className="mb-3 flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg eco-gradient">
+                <Droplets className="h-4 w-4 text-white" />
+              </div>
+              <h4 className="font-semibold text-foreground">Datos Corporativos Hídricos</h4>
+            </div>
+
+            {datosCorporativos?.encontrado ? (
+              <div className="space-y-4">
+                {/* Consumo Mensual - Prominente */}
+                <div className="rounded-xl bg-card p-4 text-center">
+                  <p className="text-xs text-muted-foreground mb-1">Consumo mensual de la planta</p>
+                  <div className="text-3xl font-bold text-primary">
+                    {formatearConsumoAgua(datosCorporativos.huellaHidricaMensual)}
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    ({formatearConsumoAgua(datosCorporativos.huellaHidricaAnual)} anuales)
+                  </p>
+                </div>
+
+                {/* Detalles del Corporativo */}
+                <div className="space-y-2">
+                  <InfoRow
+                    label="Fábrica"
+                    value={datosCorporativos.nombreFabrica || 'No disponible'}
+                    highlight
+                  />
+                  <InfoRow
+                    label="Región"
+                    value={datosCorporativos.ubicacion || 'No disponible'}
+                  />
+                </div>
+
+                <div className="pt-2 border-t border-border">
+                  <p className="text-xs text-center text-muted-foreground">
+                    Datos verificados en base de datos Cobalto
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center gap-3 py-4 text-center">
+                <AlertTriangle className="h-10 w-10 text-warning" />
+                <div>
+                  <h5 className="font-medium text-foreground">Producto no registrado</h5>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Este producto no se encuentra en nuestra base de datos hídrica.
+                  </p>
+                </div>
+              </div>
+            )}
+          </motion.div>
+
           {/* Region Info */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -145,16 +207,16 @@ export function ProductCard({ producto, estadoConfianza, onClaimDiscount, openFo
               <MapPin className="h-5 w-5 text-accent" />
               <h4 className="font-semibold text-foreground">Condiciones Hídricas</h4>
             </div>
-            
+
             <div className="space-y-3">
               <InfoRow label="Región" value={producto.region.nombre} />
-              <InfoRow 
-                label="Estado de sequía" 
+              <InfoRow
+                label="Estado de sequía"
                 value={traducirEstadoSequia(producto.region.estado_sequia)}
                 highlight={producto.region.estado_sequia !== 'normal'}
               />
-              <InfoRow 
-                label="Índice SPI" 
+              <InfoRow
+                label="Índice SPI"
                 value={producto.region.spi.toFixed(1)}
               />
             </div>
@@ -183,7 +245,7 @@ export function ProductCard({ producto, estadoConfianza, onClaimDiscount, openFo
                     />
                   </div>
                 )}
-                
+
                 {/* Product Details */}
                 <div className="w-full space-y-3 text-center">
                   <h3 className="text-xl font-bold text-foreground">
