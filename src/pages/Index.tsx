@@ -1,10 +1,13 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Scan } from 'lucide-react';
+import { ArrowLeft, Scan, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/Header';
 import { BarcodeScanner } from '@/components/BarcodeScanner';
 import { ProductCard } from '@/components/ProductCard';
 import { DiscountModal } from '@/components/DiscountModal';
+import { BottomNavbar } from '@/components/BottomNavbar';
 import { Button } from '@/components/ui/button';
 import {
   buscarProducto,
@@ -28,6 +31,8 @@ import { useToast } from '@/hooks/use-toast';
 type Vista = 'scanner' | 'resultado';
 
 const Index = () => {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const [vista, setVista] = useState<Vista>('scanner');
   const [isScanning, setIsScanning] = useState(false);
   const [producto, setProducto] = useState<ProductoInfo | null>(null);
@@ -37,6 +42,13 @@ const Index = () => {
   const [pruebaImpacto, setPruebaImpacto] = useState<PruebaDeImpacto | null>(null);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const { toast } = useToast();
+
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/login');
+    }
+  }, [user, loading, navigate]);
 
   const handleScan = useCallback(async (barcode: string) => {
     setIsScanning(true);
@@ -132,8 +144,20 @@ const Index = () => {
     setShowDiscountModal(true);
   }, []);
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-16">
       <Header />
 
       <main className="container px-4 py-6">
@@ -208,6 +232,9 @@ const Index = () => {
           descuento={calcularDescuento(producto)}
         />
       )}
+
+      {/* Bottom Navigation */}
+      <BottomNavbar />
     </div>
   );
 };
