@@ -31,9 +31,9 @@ function calcularEstadoHidrico(datosCorporativos: DatosCorporativos | null | und
 
 /**
  * Calcula la puntuación eco basada en consumo mensual
- * <= 20,000 L/mes = 100 puntos
- * >= 30,000,000 L/mes = 0 puntos
- * Escala lineal entre estos valores
+ * Escala más estricta:
+ * <= 20,000 L/mes = 100 puntos (muy eficiente)
+ * >= 1,000,000 L/mes = 0 puntos (alto consumo)
  */
 function calcularPuntuacionEco(datosCorporativos: DatosCorporativos | null | undefined): number {
   if (!datosCorporativos?.encontrado || !datosCorporativos.huellaHidricaMensual) {
@@ -42,7 +42,7 @@ function calcularPuntuacionEco(datosCorporativos: DatosCorporativos | null | und
 
   const consumo = datosCorporativos.huellaHidricaMensual;
   const MIN_CONSUMO = 20000;      // 20K L/mes = 100 puntos
-  const MAX_CONSUMO = 30000000;   // 30M L/mes = 0 puntos
+  const MAX_CONSUMO = 1000000;    // 1M L/mes = 0 puntos (escala más estricta)
 
   if (consumo <= MIN_CONSUMO) return 100;
   if (consumo >= MAX_CONSUMO) return 0;
@@ -186,7 +186,7 @@ export function ProductCard({ producto, estadoConfianza, onClaimDiscount, openFo
                 {/* Detalles del Corporativo */}
                 <div className="space-y-2">
                   <InfoRow
-                    label="Fábrica"
+                    label="Corporativo"
                     value={datosCorporativos.nombreFabrica || 'No disponible'}
                     highlight
                   />
@@ -198,7 +198,7 @@ export function ProductCard({ producto, estadoConfianza, onClaimDiscount, openFo
 
                 <div className="pt-2 border-t border-border">
                   <p className="text-xs text-center text-muted-foreground">
-                    Datos verificados en base de datos Cobalto
+                    Datos verificados en CONAGUA
                   </p>
                 </div>
               </div>
