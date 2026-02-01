@@ -1,50 +1,76 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, Scan } from 'lucide-react';
+import { ArrowLeft, Scan, Loader2 } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 import { Header } from '@/components/Header';
 import { BarcodeScanner } from '@/components/BarcodeScanner';
 import { ProductCard } from '@/components/ProductCard';
 import { DiscountModal } from '@/components/DiscountModal';
+import { BottomNavbar } from '@/components/BottomNavbar';
 import { Button } from '@/components/ui/button';
-import { 
-  buscarProducto, 
-  obtenerEstadoConfianza, 
+import {
+  buscarProducto,
+  obtenerEstadoConfianza,
   generarPruebaDeImpacto,
   calcularDescuento,
   type ProductoInfo,
   type EstadoConfianza,
   type PruebaDeImpacto
 } from '@/services/verificationService';
-import { 
-  buscarProductoOpenFoodFacts, 
-  type OpenFoodFactsProduct 
+import {
+  buscarProductoOpenFoodFacts,
+  type OpenFoodFactsProduct
 } from '@/services/openFoodFactsService';
+import {
+  buscarProductoEnSupabase,
+  type DatosCorporativos
+} from '@/services/supabaseProductService';
+import { saveScannedProduct } from '@/services/checkinService';
 import { useToast } from '@/hooks/use-toast';
 
 type Vista = 'scanner' | 'resultado';
 
 const Index = () => {
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
   const [vista, setVista] = useState<Vista>('scanner');
   const [isScanning, setIsScanning] = useState(false);
   const [producto, setProducto] = useState<ProductoInfo | null>(null);
   const [openFoodFactsData, setOpenFoodFactsData] = useState<OpenFoodFactsProduct | null>(null);
+  const [datosCorporativos, setDatosCorporativos] = useState<DatosCorporativos | null>(null);
   const [estadoConfianza, setEstadoConfianza] = useState<EstadoConfianza>('pendiente');
   const [pruebaImpacto, setPruebaImpacto] = useState<PruebaDeImpacto | null>(null);
   const [showDiscountModal, setShowDiscountModal] = useState(false);
   const { toast } = useToast();
 
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/login');
+    }
+  }, [user, loading, navigate]);
+
   const handleScan = useCallback(async (barcode: string) => {
     setIsScanning(true);
-    
-    // Buscar en paralelo en ambas fuentes
+    setDatosCorporativos(null);
+
+    // Buscar en paralelo en ambas fuentes locales
     const [productoLocal, openFoodFactsResult] = await Promise.all([
       Promise.resolve(buscarProducto(barcode)),
       buscarProductoOpenFoodFacts(barcode),
     ]);
-    
+
     // Guardar datos de Open Food Facts si existen
     if (openFoodFactsResult.found && openFoodFactsResult.product) {
       setOpenFoodFactsData(openFoodFactsResult.product);
+
+      // Buscar en Supabase usando el nombre del producto
+      const nombreProducto = openFoodFactsResult.product.product_name;
+      if (nombreProducto) {
+        const datosSupabase = await buscarProductoEnSupabase(nombreProducto);
+        setDatosCorporativos(datosSupabase);
+      }
     } else {
       setOpenFoodFactsData(null);
     }
@@ -54,13 +80,18 @@ const Index = () => {
       setEstadoConfianza(obtenerEstadoConfianza(productoLocal));
       setPruebaImpacto(generarPruebaDeImpacto(productoLocal));
       setVista('resultado');
-      
+
+      // Guardar en historial
+      if (user?.id) {
+        await saveScannedProduct(user.id, productoLocal.nombre, productoLocal.marca);
+      }
+
       toast({
-        title: '¡Producto encontrado!',
+        title: '¡Producto verificado!',
         description: `${productoLocal.nombre} - ${productoLocal.marca}`,
       });
     } else if (openFoodFactsResult.found && openFoodFactsResult.product) {
-      // Si solo está en Open Food Facts, crear producto básico sin verificación
+      // Producto encontrado en Open Food Facts
       const productoBasico: ProductoInfo = {
         barcode,
         nombre: openFoodFactsResult.product.product_name || 'Producto sin nombre',
@@ -84,32 +115,38 @@ const Index = () => {
         },
         descuento_disponible: 0,
       };
-      
+
       setProducto(productoBasico);
       setEstadoConfianza('rojo');
       setPruebaImpacto(null);
       setVista('resultado');
-      
+
+      // Guardar en historial
+      if (user?.id) {
+        await saveScannedProduct(user.id, productoBasico.nombre, productoBasico.marca);
+      }
+
       toast({
-        title: 'Producto encontrado en Open Food Facts',
-        description: 'Sin datos de verificación hídrica disponibles.',
+        title: 'Producto encontrado',
+        description: 'Buscando datos en base de datos Cobalto...',
         variant: 'default',
       });
     } else {
       toast({
         title: 'Producto no encontrado',
-        description: 'El código de barras no está registrado en ninguna base de datos.',
+        description: 'El código de barras no está registrado.',
         variant: 'destructive',
       });
     }
-    
+
     setIsScanning(false);
-  }, [toast]);
+  }, [toast, user]);
 
   const handleBack = useCallback(() => {
     setVista('scanner');
     setProducto(null);
     setOpenFoodFactsData(null);
+    setDatosCorporativos(null);
     setEstadoConfianza('pendiente');
     setPruebaImpacto(null);
   }, []);
@@ -118,10 +155,22 @@ const Index = () => {
     setShowDiscountModal(true);
   }, []);
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-16">
       <Header />
-      
+
       <main className="container px-4 py-6">
         <AnimatePresence mode="wait">
           {vista === 'scanner' ? (
@@ -176,6 +225,7 @@ const Index = () => {
                   estadoConfianza={estadoConfianza}
                   onClaimDiscount={handleClaimDiscount}
                   openFoodFactsData={openFoodFactsData}
+                  datosCorporativos={datosCorporativos}
                 />
               )}
             </motion.div>
@@ -193,6 +243,9 @@ const Index = () => {
           descuento={calcularDescuento(producto)}
         />
       )}
+
+      {/* Bottom Navigation */}
+      <BottomNavbar />
     </div>
   );
 };
