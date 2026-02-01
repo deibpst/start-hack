@@ -26,6 +26,7 @@ import {
   buscarProductoEnSupabase,
   type DatosCorporativos
 } from '@/services/supabaseProductService';
+import { saveScannedProduct } from '@/services/checkinService';
 import { useToast } from '@/hooks/use-toast';
 
 type Vista = 'scanner' | 'resultado';
@@ -80,6 +81,11 @@ const Index = () => {
       setPruebaImpacto(generarPruebaDeImpacto(productoLocal));
       setVista('resultado');
 
+      // Guardar en historial
+      if (user?.id) {
+        await saveScannedProduct(user.id, productoLocal.nombre, productoLocal.marca);
+      }
+
       toast({
         title: '¡Producto verificado!',
         description: `${productoLocal.nombre} - ${productoLocal.marca}`,
@@ -115,6 +121,11 @@ const Index = () => {
       setPruebaImpacto(null);
       setVista('resultado');
 
+      // Guardar en historial
+      if (user?.id) {
+        await saveScannedProduct(user.id, productoBasico.nombre, productoBasico.marca);
+      }
+
       toast({
         title: 'Producto encontrado',
         description: 'Buscando datos en base de datos Cobalto...',
@@ -129,7 +140,7 @@ const Index = () => {
     }
 
     setIsScanning(false);
-  }, [toast]);
+  }, [toast, user]);
 
   const handleBack = useCallback(() => {
     setVista('scanner');

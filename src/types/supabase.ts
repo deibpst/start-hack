@@ -3,6 +3,8 @@ export interface Profile {
     username: string | null;
     full_name: string | null;
     avatar_url: string | null;
+    coins: number;
+    last_checkin: string | null;
     updated_at: string;
 }
 

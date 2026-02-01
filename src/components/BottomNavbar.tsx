@@ -1,4 +1,4 @@
-import { Scan, User } from 'lucide-react';
+import { Scan, User, Calendar } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 
@@ -11,6 +11,11 @@ export function BottomNavbar() {
             icon: Scan,
             label: 'Escáner',
             path: '/',
+        },
+        {
+            icon: Calendar,
+            label: 'Check-in',
+            path: '/checkin',
         },
         {
             icon: User,
