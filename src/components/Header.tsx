@@ -14,15 +14,12 @@ export function Header() {
             <Droplets className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-foreground">EcoVerify</h1>
+            <h1 className="text-lg font-bold text-foreground">Cobalto</h1>
             <p className="text-xs text-muted-foreground">Verificación Hídrica</p>
           </div>
         </div>
-        
-        <div className="flex items-center gap-1 rounded-full bg-muted px-3 py-1.5">
-          <Shield className="h-4 w-4 text-primary" />
-          <span className="text-xs font-medium text-foreground">Blockchain</span>
-        </div>
+
+
       </div>
     </motion.header>
   );
