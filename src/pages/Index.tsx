@@ -5,19 +5,20 @@ import { Header } from '@/components/Header';
 import { BarcodeScanner } from '@/components/BarcodeScanner';
 import { ProductCard } from '@/components/ProductCard';
 import { DiscountModal } from '@/components/DiscountModal';
+import { SupabaseTest } from '@/components/SupabaseTest';
 import { Button } from '@/components/ui/button';
-import { 
-  buscarProducto, 
-  obtenerEstadoConfianza, 
+import {
+  buscarProducto,
+  obtenerEstadoConfianza,
   generarPruebaDeImpacto,
   calcularDescuento,
   type ProductoInfo,
   type EstadoConfianza,
   type PruebaDeImpacto
 } from '@/services/verificationService';
-import { 
-  buscarProductoOpenFoodFacts, 
-  type OpenFoodFactsProduct 
+import {
+  buscarProductoOpenFoodFacts,
+  type OpenFoodFactsProduct
 } from '@/services/openFoodFactsService';
 import { useToast } from '@/hooks/use-toast';
 
@@ -35,13 +36,13 @@ const Index = () => {
 
   const handleScan = useCallback(async (barcode: string) => {
     setIsScanning(true);
-    
+
     // Buscar en paralelo en ambas fuentes
     const [productoLocal, openFoodFactsResult] = await Promise.all([
       Promise.resolve(buscarProducto(barcode)),
       buscarProductoOpenFoodFacts(barcode),
     ]);
-    
+
     // Guardar datos de Open Food Facts si existen
     if (openFoodFactsResult.found && openFoodFactsResult.product) {
       setOpenFoodFactsData(openFoodFactsResult.product);
@@ -54,7 +55,7 @@ const Index = () => {
       setEstadoConfianza(obtenerEstadoConfianza(productoLocal));
       setPruebaImpacto(generarPruebaDeImpacto(productoLocal));
       setVista('resultado');
-      
+
       toast({
         title: '¡Producto encontrado!',
         description: `${productoLocal.nombre} - ${productoLocal.marca}`,
@@ -84,12 +85,12 @@ const Index = () => {
         },
         descuento_disponible: 0,
       };
-      
+
       setProducto(productoBasico);
       setEstadoConfianza('rojo');
       setPruebaImpacto(null);
       setVista('resultado');
-      
+
       toast({
         title: 'Producto encontrado en Open Food Facts',
         description: 'Sin datos de verificación hídrica disponibles.',
@@ -102,7 +103,7 @@ const Index = () => {
         variant: 'destructive',
       });
     }
-    
+
     setIsScanning(false);
   }, [toast]);
 
@@ -121,7 +122,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="container px-4 py-6">
         <AnimatePresence mode="wait">
           {vista === 'scanner' ? (
@@ -193,6 +194,9 @@ const Index = () => {
           descuento={calcularDescuento(producto)}
         />
       )}
+
+      {/* Supabase Connection Test - Remove after verification */}
+      <SupabaseTest />
     </div>
   );
 };
