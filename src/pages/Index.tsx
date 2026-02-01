@@ -226,6 +226,7 @@ const Index = () => {
                   onClaimDiscount={handleClaimDiscount}
                   openFoodFactsData={openFoodFactsData}
                   datosCorporativos={datosCorporativos}
+                  userId={user?.id}
                 />
               )}
             </motion.div>

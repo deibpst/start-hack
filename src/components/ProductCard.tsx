@@ -1,12 +1,23 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Droplets, Package, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { DiscountButton } from './DiscountButton';
+import { CouponCard } from './CouponCard';
+import { WaterComparison } from './WaterComparison';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { ProductoInfo, EstadoConfianza } from '@/services/verificationService';
 import { calcularDescuento } from '@/services/verificationService';
 import type { OpenFoodFactsProduct } from '@/services/openFoodFactsService';
 import type { DatosCorporativos } from '@/services/supabaseProductService';
 import { formatearConsumoAgua } from '@/services/supabaseProductService';
+import {
+  shouldGenerateCoupon,
+  calculateWaterComparison,
+  generateCouponCode,
+  determineBenefitType,
+  getBenefitMessage,
+  saveCoupon
+} from '@/services/couponService';
 
 interface ProductCardProps {
   producto: ProductoInfo;
@@ -14,6 +25,7 @@ interface ProductCardProps {
   onClaimDiscount: () => void;
   openFoodFactsData?: OpenFoodFactsProduct | null;
   datosCorporativos?: DatosCorporativos | null;
+  userId?: string;
 }
 
 /**
@@ -53,10 +65,40 @@ function calcularPuntuacionEco(datosCorporativos: DatosCorporativos | null | und
   return Math.round(puntuacion);
 }
 
-export function ProductCard({ producto, estadoConfianza, onClaimDiscount, openFoodFactsData, datosCorporativos }: ProductCardProps) {
+export function ProductCard({ producto, estadoConfianza, onClaimDiscount, openFoodFactsData, datosCorporativos, userId }: ProductCardProps) {
   const descuento = calcularDescuento(producto);
   const estadoHidrico = calcularEstadoHidrico(datosCorporativos);
   const puntuacionEco = calcularPuntuacionEco(datosCorporativos);
+
+  const [generatedCoupon, setGeneratedCoupon] = useState<{
+    code: string;
+    benefit: any;
+    expiresAt: Date;
+  } | null>(null);
+
+  // Generar cupón si el producto es sostenible
+  useEffect(() => {
+    if (!userId || generatedCoupon) return;
+
+    const generateCoupon = async () => {
+      if (shouldGenerateCoupon(producto)) {
+        const code = generateCouponCode();
+        const benefitType = determineBenefitType(producto);
+        const comparison = calculateWaterComparison(producto);
+        const benefit = getBenefitMessage(benefitType, producto, comparison);
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+
+        // Guardar en Supabase
+        await saveCoupon(userId, producto, code, benefitType, comparison);
+
+        setGeneratedCoupon({ code, benefit, expiresAt });
+      }
+    };
+
+    generateCoupon();
+  }, [producto, userId, generatedCoupon]);
+
+  const waterComparison = calculateWaterComparison(producto);
 
   return (
     <motion.div
@@ -276,6 +318,23 @@ export function ProductCard({ producto, estadoConfianza, onClaimDiscount, openFo
           </motion.div>
         </TabsContent>
       </Tabs>
+
+      {/* Water Comparison - mostrar siempre */}
+      {waterComparison && (
+        <WaterComparison
+          comparison={waterComparison}
+          productName={producto.nombre}
+        />
+      )}
+
+      {/* Coupon Card - solo si se generó */}
+      {generatedCoupon && (
+        <CouponCard
+          couponCode={generatedCoupon.code}
+          benefit={generatedCoupon.benefit}
+          expiresAt={generatedCoupon.expiresAt}
+        />
+      )}
 
       {/* Discount Button */}
       {estadoConfianza === 'verde' && descuento > 0 && (
