@@ -5,7 +5,6 @@ import { Header } from '@/components/Header';
 import { BarcodeScanner } from '@/components/BarcodeScanner';
 import { ProductCard } from '@/components/ProductCard';
 import { DiscountModal } from '@/components/DiscountModal';
-import { SupabaseTest } from '@/components/SupabaseTest';
 import { Button } from '@/components/ui/button';
 import {
   buscarProducto,
@@ -209,9 +208,6 @@ const Index = () => {
           descuento={calcularDescuento(producto)}
         />
       )}
-
-      {/* Supabase Connection Test - Remove after verification */}
-      <SupabaseTest />
     </div>
   );
 };

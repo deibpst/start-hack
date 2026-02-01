@@ -1,10 +1,9 @@
 import { motion } from 'framer-motion';
-import { Droplets, Leaf, Factory, MapPin, Package, AlertTriangle } from 'lucide-react';
-import { TrustTrafficLight } from './TrustTrafficLight';
+import { Droplets, Package, AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import { DiscountButton } from './DiscountButton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { ProductoInfo, EstadoConfianza } from '@/services/verificationService';
-import { traducirEstadoSequia, traducirTecnologia, calcularDescuento } from '@/services/verificationService';
+import { calcularDescuento } from '@/services/verificationService';
 import type { OpenFoodFactsProduct } from '@/services/openFoodFactsService';
 import type { DatosCorporativos } from '@/services/supabaseProductService';
 import { formatearConsumoAgua } from '@/services/supabaseProductService';
@@ -17,8 +16,47 @@ interface ProductCardProps {
   datosCorporativos?: DatosCorporativos | null;
 }
 
+/**
+ * Calcula el estado del banner basado en huella hídrica mensual
+ * > 800,000 L/mes = rojo (demasiada huella)
+ * <= 800,000 L/mes = verde (verificado)
+ * Sin datos = pendiente
+ */
+function calcularEstadoHidrico(datosCorporativos: DatosCorporativos | null | undefined): 'verde' | 'rojo' | 'pendiente' {
+  if (!datosCorporativos?.encontrado || !datosCorporativos.huellaHidricaMensual) {
+    return 'pendiente';
+  }
+  return datosCorporativos.huellaHidricaMensual > 800000 ? 'rojo' : 'verde';
+}
+
+/**
+ * Calcula la puntuación eco basada en consumo mensual
+ * <= 20,000 L/mes = 100 puntos
+ * >= 30,000,000 L/mes = 0 puntos
+ * Escala lineal entre estos valores
+ */
+function calcularPuntuacionEco(datosCorporativos: DatosCorporativos | null | undefined): number {
+  if (!datosCorporativos?.encontrado || !datosCorporativos.huellaHidricaMensual) {
+    return 0;
+  }
+
+  const consumo = datosCorporativos.huellaHidricaMensual;
+  const MIN_CONSUMO = 20000;      // 20K L/mes = 100 puntos
+  const MAX_CONSUMO = 30000000;   // 30M L/mes = 0 puntos
+
+  if (consumo <= MIN_CONSUMO) return 100;
+  if (consumo >= MAX_CONSUMO) return 0;
+
+  // Escala lineal inversa
+  const rango = MAX_CONSUMO - MIN_CONSUMO;
+  const puntuacion = 100 - ((consumo - MIN_CONSUMO) / rango) * 100;
+  return Math.round(puntuacion);
+}
+
 export function ProductCard({ producto, estadoConfianza, onClaimDiscount, openFoodFactsData, datosCorporativos }: ProductCardProps) {
   const descuento = calcularDescuento(producto);
+  const estadoHidrico = calcularEstadoHidrico(datosCorporativos);
+  const puntuacionEco = calcularPuntuacionEco(datosCorporativos);
 
   return (
     <motion.div
@@ -27,8 +65,42 @@ export function ProductCard({ producto, estadoConfianza, onClaimDiscount, openFo
       transition={{ duration: 0.5 }}
       className="flex flex-col gap-5"
     >
-      {/* Trust Traffic Light */}
-      <TrustTrafficLight estado={estadoConfianza} />
+      {/* Banner de Estado Hídrico */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ duration: 0.4 }}
+        className={`rounded-2xl p-6 text-center ${estadoHidrico === 'verde'
+          ? 'bg-gradient-to-br from-green-500 to-green-600'
+          : estadoHidrico === 'rojo'
+            ? 'bg-gradient-to-br from-red-500 to-red-600'
+            : 'bg-gradient-to-br from-amber-500 to-amber-600'
+          }`}
+      >
+        <div className="flex flex-col items-center gap-2">
+          {estadoHidrico === 'verde' ? (
+            <CheckCircle className="h-12 w-12 text-white" />
+          ) : estadoHidrico === 'rojo' ? (
+            <XCircle className="h-12 w-12 text-white" />
+          ) : (
+            <AlertTriangle className="h-12 w-12 text-white" />
+          )}
+          <h2 className="text-xl font-bold text-white">
+            {estadoHidrico === 'verde'
+              ? 'Producto Verificado'
+              : estadoHidrico === 'rojo'
+                ? 'Alta Huella Hídrica'
+                : 'Sin verificar'}
+          </h2>
+          <p className="text-sm text-white/80">
+            {estadoHidrico === 'verde'
+              ? 'Consumo hídrico sostenible'
+              : estadoHidrico === 'rojo'
+                ? 'Consumo superior a 800,000 L/mes'
+                : 'Sin datos de ahorro verificados'}
+          </p>
+        </div>
+      </motion.div>
 
       {/* Tabbed Content */}
       <Tabs defaultValue="hidrico" className="w-full">
@@ -62,78 +134,25 @@ export function ProductCard({ producto, estadoConfianza, onClaimDiscount, openFo
               </span>
             </div>
 
-            {/* Impact Metrics */}
-            {producto.verificado && (
-              <div className="mb-4 grid grid-cols-2 gap-3">
-                <MetricCard
-                  icon={Droplets}
-                  value={`${producto.impacto.agua_ahorrada_litros.toLocaleString()}`}
-                  unit="litros"
-                  label="Agua ahorrada"
-                  variant="water"
-                />
-                <MetricCard
-                  icon={Leaf}
-                  value={producto.impacto.co2e_evitado_kg.toFixed(2)}
-                  unit="kg CO₂e"
-                  label="Emisiones evitadas"
-                  variant="eco"
-                />
-              </div>
-            )}
-
-            {/* Eco Score */}
+            {/* Eco Score - Calculado desde Supabase */}
             <div className="mb-4">
               <div className="mb-2 flex items-center justify-between">
                 <span className="text-sm font-medium text-foreground">Puntuación Eco</span>
-                <span className="text-lg font-bold text-primary">{producto.impacto.puntuacion_eco}/100</span>
+                <span className={`text-lg font-bold ${puntuacionEco >= 50 ? 'text-green-600' : puntuacionEco >= 25 ? 'text-amber-500' : 'text-red-500'}`}>
+                  {puntuacionEco}/100
+                </span>
               </div>
               <div className="h-2 overflow-hidden rounded-full bg-muted">
                 <motion.div
                   initial={{ width: 0 }}
-                  animate={{ width: `${producto.impacto.puntuacion_eco}%` }}
+                  animate={{ width: `${puntuacionEco}%` }}
                   transition={{ delay: 0.5, duration: 0.8, ease: 'easeOut' }}
-                  className="h-full eco-gradient"
+                  className={`h-full ${puntuacionEco >= 50 ? 'bg-green-500' : puntuacionEco >= 25 ? 'bg-amber-500' : 'bg-red-500'}`}
                 />
               </div>
-            </div>
-          </motion.div>
-
-          {/* Factory Info */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-            className="rounded-2xl border border-border bg-card p-5 shadow-sm"
-          >
-            <div className="mb-3 flex items-center gap-2">
-              <Factory className="h-5 w-5 text-primary" />
-              <h4 className="font-semibold text-foreground">Información del Productor</h4>
-            </div>
-
-            <div className="space-y-3">
-              <InfoRow label="Fábrica" value={producto.fabrica.nombre} />
-              <InfoRow
-                label="Ahorro de agua"
-                value={`${producto.fabrica.ahorro_porcentaje}%`}
-                highlight={producto.fabrica.ahorro_porcentaje >= 25}
-              />
-
-              {producto.fabrica.tecnologias.length > 0 && (
-                <div>
-                  <p className="mb-2 text-xs text-muted-foreground">Tecnologías implementadas:</p>
-                  <div className="flex flex-wrap gap-1">
-                    {producto.fabrica.tecnologias.map((tech) => (
-                      <span
-                        key={tech}
-                        className="rounded-md bg-secondary px-2 py-1 text-xs text-secondary-foreground"
-                      >
-                        {traducirTecnologia(tech)}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+              <p className="mt-2 text-xs text-muted-foreground text-center">
+                Basado en consumo hídrico mensual de la planta productora
+              </p>
             </div>
           </motion.div>
 
@@ -156,7 +175,7 @@ export function ProductCard({ producto, estadoConfianza, onClaimDiscount, openFo
                 {/* Consumo Mensual - Prominente */}
                 <div className="rounded-xl bg-card p-4 text-center">
                   <p className="text-xs text-muted-foreground mb-1">Consumo mensual de la planta</p>
-                  <div className="text-3xl font-bold text-primary">
+                  <div className={`text-3xl font-bold ${estadoHidrico === 'verde' ? 'text-green-600' : estadoHidrico === 'rojo' ? 'text-red-500' : 'text-amber-500'}`}>
                     {formatearConsumoAgua(datosCorporativos.huellaHidricaMensual)}
                   </div>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -185,7 +204,7 @@ export function ProductCard({ producto, estadoConfianza, onClaimDiscount, openFo
               </div>
             ) : (
               <div className="flex flex-col items-center gap-3 py-4 text-center">
-                <AlertTriangle className="h-10 w-10 text-warning" />
+                <AlertTriangle className="h-10 w-10 text-amber-500" />
                 <div>
                   <h5 className="font-medium text-foreground">Producto no registrado</h5>
                   <p className="text-xs text-muted-foreground mt-1">
@@ -194,32 +213,6 @@ export function ProductCard({ producto, estadoConfianza, onClaimDiscount, openFo
                 </div>
               </div>
             )}
-          </motion.div>
-
-          {/* Region Info */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4 }}
-            className="rounded-2xl border border-border bg-card p-5 shadow-sm"
-          >
-            <div className="mb-3 flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-accent" />
-              <h4 className="font-semibold text-foreground">Condiciones Hídricas</h4>
-            </div>
-
-            <div className="space-y-3">
-              <InfoRow label="Región" value={producto.region.nombre} />
-              <InfoRow
-                label="Estado de sequía"
-                value={traducirEstadoSequia(producto.region.estado_sequia)}
-                highlight={producto.region.estado_sequia !== 'normal'}
-              />
-              <InfoRow
-                label="Índice SPI"
-                value={producto.region.spi.toFixed(1)}
-              />
-            </div>
           </motion.div>
         </TabsContent>
 
@@ -301,24 +294,6 @@ export function ProductCard({ producto, estadoConfianza, onClaimDiscount, openFo
   );
 }
 
-interface MetricCardProps {
-  icon: React.ComponentType<{ className?: string }>;
-  value: string;
-  unit: string;
-  label: string;
-  variant: 'water' | 'eco';
-}
-
-function MetricCard({ icon: Icon, value, unit, label, variant }: MetricCardProps) {
-  return (
-    <div className={`rounded-xl p-4 ${variant === 'water' ? 'water-gradient' : 'eco-gradient'}`}>
-      <Icon className="mb-2 h-5 w-5 text-white/80" />
-      <div className="text-2xl font-bold text-white">{value}</div>
-      <div className="text-xs text-white/80">{unit}</div>
-      <div className="mt-1 text-xs text-white/70">{label}</div>
-    </div>
-  );
-}
 
 interface InfoRowProps {
   label: string;
